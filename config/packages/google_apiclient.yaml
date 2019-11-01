@@ -1,0 +1,18 @@
+services:
+    Google_Client:
+        class: Google_Client
+        calls:
+            - [setAuthConfig, ['%env(GOOGLE_OAUTH_JSON)%']]
+            - [setSubject, ['%env(GOOGLE_ADMIN_USER)%']]
+            - [addScope, [['https://www.googleapis.com/auth/admin.directory.user', 'https://www.googleapis.com/auth/admin.directory.group']]]
+
+    Google_Service_Directory:
+        class: Google_Service_Directory
+        autowire: true
+
+    League\OAuth2\Client\Provider\Google:
+        arguments:
+            -
+              clientId: '%env(GOOGLE_CLIENT_ID)%'
+              clientSecret: '%env(GOOGLE_CLIENT_SECRET)%'
+              hostedDomain: '%env(GOOGLE_CLIENT_DOMAIN)%'

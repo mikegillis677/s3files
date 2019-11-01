@@ -1,0 +1,178 @@
+{% extends 'base.html.twig' %}
+
+{% block title 'View Files' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .list-group-flush .list-group-item {
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb" style="margin-top: 20px;">
+        <ol class="breadcrumb">
+            {% for title,location in breadcrumbs %}
+                <li class="breadcrumb-item {% if location == activeBreadcrumb %}active{% endif %}" {% if location == activeBreadcrumb %}aria-current="page"{% endif %}>
+                    {% if location != activeBreadcrumb %}
+                        <a href="/?path={{ location|url_encode }}">{{ title }}</a>
+                    {% else %}
+                        {{ title }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    {% for error in app.flashes('error') %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+
+    {% for success in app.flashes('success') %}
+        <div class="alert alert-primary" role="alert">{{ success }}</div>
+    {% endfor %}
+
+
+    <div style="margin-bottom: 10px; margin-top: 10px;">
+        <a class="btn btn-primary" id="download" href="#">Download</a>
+        <a class="btn btn-primary" id="upload" href="/files/upload?path={{ path|url_encode }}">Upload</a>
+        <form class="d-inline" action="/files/delete" method="POST">
+            <input type="hidden" id="path" name="path" value="{{ path }}" />
+            <input type="hidden" id="deleteFile" name="deleteFile" value="" />
+            <input type="submit" class="btn btn-primary" id="remove-file" disabled="disabled" value="Remove File"
+               onclick="if(confirm('Are you sure you want to delete this file?') == false) { return false; }"
+            />
+        </form>
+        <button class="btn btn-primary" id="create-folder">Create Folder</button>
+        <form class="d-inline" action="/files/folders/delete" method="POST">
+            <input type="hidden" id="path" name="path" value="{{ path }}" />
+            <input type="hidden" id="deleteFolderName" name="deleteFolderName" value="" />
+            <input type="submit" class="btn btn-primary" id="remove-folder" disabled="disabled" value="Remove Folder"
+               onclick="if(confirm('Are you sure you want to delete this file?') == false) { return false; }"
+            />
+        </form>
+    </div>
+
+    <div class="card fixed-bottom" style="display: none; margin-bottom: 10px;" id="download-uri-box">
+        <div class="card-body">
+            Sharing URL: <a href="#" id="download-uri" target="_blank"></a>
+        </div>
+    </div>
+
+    <div class="card" style="display: none; margin-bottom: 10px;" id="create-folder-box">
+        <div class="card-body">
+            <h3>Create Folder</h3>
+            <form action="/files/folders" method="POST">
+                <input type="hidden" name="path" id="path" value="{{ path }}" />
+                <div class="form-group">
+                    <label for="folderName">Folder name</label>
+                    <input type="text" class="form-control" id="folderName" name="folderName" placeholder="Enter new folder name" required="required">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <button type="submit" class="btn btn-secondary" id="create-folder-cancel">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm">
+            <strong style="margin-left: 20px">File name</strong>
+        </div>
+        <div class="col-sm">
+            <strong style="margin-left: 10px">Added on</strong>
+        </div>
+        <div class="col-sm">
+            <strong>Added by</strong>
+        </div>
+        <div class="col-sm">
+            <strong>Size</strong>
+        </div>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for file in files %}
+            <li class="list-group-item" data-download-uri="{{ file.type == 'dir' ? file.path : file.hash }}" data-ddl-uri="{{ file.path }}" data-file-type="{{ file.type }}">
+                <div class="row">
+                    <div class="col-sm">
+                    {% if file.type == 'dir' %}
+                        <span class="oi oi-folder"></span>
+                    {% elseif file.type == 'file' %}
+                        <span class="oi oi-file"></span>
+                    {% endif %}
+                        {{ file.basename }}
+                    </div>
+                    <div class="col-sm">
+                        {% if file.timestamp is defined %}{{ file.timestamp }}{% endif %}
+                    </div>
+                    <div class="col-sm">
+                        {% if file.created_by is defined %}{{ file.created_by }}{% endif %}
+                    </div>
+                    <div class="col-sm">
+                        {% if file.size is defined %}
+                            <span>
+                            {{ (file.size / 1024.0 / 1024.0)|round(2) }} MB
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="text/javascript">
+        $(document).ready(function() {
+          $('.list-group-item').click(function () {
+            var fileType = $(this).attr('data-file-type');
+
+            if (fileType === 'dir' && $(this).hasClass('active')) {
+              $('#download').attr('href', '#').attr('target', '');
+              $('#download-uri-box').hide();
+              document.location = '/?path=' + encodeURIComponent($(this).attr('data-download-uri'));
+              return;
+            }
+
+            $('.list-group-item').removeClass('active');
+            $(this).addClass('active');
+
+            if (fileType === 'file') {
+              var ddlUri = '{{ s3DefaultPath }}/' + encodeURIComponent($(this).attr('data-ddl-uri'));
+              var downloadUri = '{{ downloadUrl }}/download/' + encodeURIComponent($(this).attr('data-download-uri'));
+              $('#download').attr('href', ddlUri).attr('target', '_blank');
+              $('#download-uri').attr('href', downloadUri);
+              $('#download-uri').text(downloadUri);
+              $('#download-uri-box').show();
+
+              $('#remove-folder').prop('disabled', true);
+              $('#deleteFolderName').val('');
+
+              $('#remove-file').prop('disabled', false);
+              $('#deleteFile').val($(this).attr('data-ddl-uri'));
+
+            } else {
+              $('#download').attr('href', '#').attr('target', '');
+              $('#download-uri-box').hide();
+
+              $('#remove-folder').prop('disabled', false);
+              $('#deleteFolderName').val($(this).attr('data-ddl-uri'));
+
+              $('#remove-file').prop('disabled', true);
+              $('#deleteFile').val('');
+            }
+          });
+
+          $("#create-folder").click(function() {
+            $("#create-folder-box").show();
+            $("#create-folder").prop('disabled', true);
+          });
+
+          $("#create-folder-cancel").click(function() {
+            $("#create-folder-box").hide();
+            $("#create-folder").prop('disabled', false);
+          });
+        });
+    </script>
+{% endblock %}

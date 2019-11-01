@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block navigation %}
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/">S3 Files</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="jumbotron">
+        {% if error == '' %}
+
+            <h1 class="display-4">Click below to download your file:</h1>
+            <hr class="my-4">
+            <p>{{ description }}</p>
+            <a class="btn btn-primary btn-lg" href="{{ downloadURL }}" role="button" target="_blank">{{ name != '' ? name : file }}</a>
+        {% else %}
+            <h1 class="display-4">Click below to download your file:</h1>
+        {% endif %}
+    </div>
+{% endblock %}

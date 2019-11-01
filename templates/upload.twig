@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title 'Upload Files' %}
+
+{% block content %}
+    <nav aria-label="breadcrumb" style="margin-top: 20px;">
+        <ol class="breadcrumb">
+            {% for title,location in breadcrumbs %}
+                <li class="breadcrumb-item {% if location == activeBreadcrumb %}active{% endif %}" {% if location == activeBreadcrumb %}aria-current="page"{% endif %}>
+                    {% if location != activeBreadcrumb %}
+                        {{ title }}
+                    {% else %}
+                        {{ title }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    {% for error in app.flashes('error') %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endfor %}
+
+    <div class="card" id="upload-file-box">
+        <div class="card-body">
+            <h3>Upload file</h3>
+            <form action="/files/upload" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="path" id="path" value="{{ path }}" />
+                <div class="form-group">
+                    <label for="uploadFile">File</label>
+                    <input type="file" class="form-control" id="uploadFile" name="uploadFile" placeholder="Choose a file to upload..." required="required">
+                </div>
+                <div class="form-group">
+                    <label for="display-name">Display Name</label>
+                    <input type="text" class="form-control" id="display-name" name="display-name" placeholder="Enter the name you want displayed for it" required="required">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter the description you want displayed for it"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <a class="btn btn-secondary" id="upload" href="/?path={{ path|url_encode }}">Cancel</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}
