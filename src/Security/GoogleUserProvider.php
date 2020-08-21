@@ -73,7 +73,7 @@ class GoogleUserProvider implements UserProviderInterface
     private function getUser(string $userId): User
     {
         return $this->directory->users->get($userId, [
-            'viewType' => 'DOMAIN_PUBLIC',
+            'viewType' => 'domain_public',
         ]);
     }
 
